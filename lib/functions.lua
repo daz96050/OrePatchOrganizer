@@ -14,6 +14,9 @@ Resource_Organizer = {
     AllowFluids = true, --[[@as boolean]]
     AllowMixing = true, --[[@as boolean]]
     MachineSize = 0, --[[@as integer]]
+    Noise = false, --[[@as boolean]]        --Natural placement (dense center, sparse edges)
+    NoiseFalloff = 2, --[[@as integer]]      --How sharply density drops toward the edges
+    NoiseWaviness = 0.3, --[[@as number]]    --How irregular the patch outline is
     Debug = false --[[@as boolean]]
 }
 
@@ -24,6 +27,9 @@ local function UpdateStoredSettings(event)
     Resource_Organizer.AllowSolids = settings.global["resource-patch-organizer-allow-solids"].value
     Resource_Organizer.AllowFluids = settings.global["resource-patch-organizer-allow-fluids"].value
     Resource_Organizer.AllowMixing = settings.global["resource-patch-organizer-allow-mixing"].value
+    Resource_Organizer.Noise = settings.global["resource-patch-organizer-noise"].value
+    Resource_Organizer.NoiseFalloff = settings.global["resource-patch-organizer-noise-falloff"].value
+    Resource_Organizer.NoiseWaviness = settings.global["resource-patch-organizer-noise-waviness"].value
     Resource_Organizer.Debug = settings.get_player_settings(event.player_index)["resource-patch-organizer-debug"].value
 end
 
@@ -293,20 +299,113 @@ function On_Player_Alt_Selected_Area(event)
         game.print({ "", "Printing ", Resource_Organizer.Name_Localised, ": ", FormatInt(Resource_Organizer.Count) })
 
         if Resource_Organizer.Handler == 'spread' then
-            --Print solids in a clean square
-            for x = event.area.left_top.x, event.area.right_bottom.x do     --Iterate x axis
-                for y = event.area.left_top.y, event.area.right_bottom.y do --iterate y axis
-                    -- Check resources to print, and not colliding
-                    if Resource_Organizer.Count ~= 0 and event.surface.can_place_entity { name = Resource_Organizer.Name, position = { x, y } } then
-                        --Print resource
-                        event.surface.create_entity({
-                            name = Resource_Organizer.Name,
-                            position = { x, y },
-                            amount = math.min(Resource_Organizer.Count, Resource_Organizer.CountPerCell)
-                        })
-                        --Remove printed resource from our total count
-                        Resource_Organizer.Count = Resource_Organizer.Count -
-                            math.min(Resource_Organizer.Count, Resource_Organizer.CountPerCell)
+            if Resource_Organizer.Noise then
+                --Natural placement: one solid, contiguous blob with an irregular outline,
+                --richest in the centre and only slightly lighter toward the edges.
+
+                --Centre and half-extents of the selection (used to build an inscribed ellipse)
+                local cx = (event.area.left_top.x + event.area.right_bottom.x) / 2
+                local cy = (event.area.left_top.y + event.area.right_bottom.y) / 2
+                local halfW = math.max((event.area.right_bottom.x - event.area.left_top.x) / 2, 0.5)
+                local halfH = math.max((event.area.right_bottom.y - event.area.left_top.y) / 2, 0.5)
+                local falloff = Resource_Organizer.NoiseFalloff
+
+                --Coherent, deterministic boundary noise: the patch edge is warped by a few sine
+                --harmonics of the angle rather than a per-tile random roll. That keeps the body
+                --a single connected mass (every tile inside the outline is filled - no gaps or
+                --corner-only tiles) while giving it an organic, non-circular shape. Phases are
+                --seeded from the patch centre so each patch looks different, and it stays
+                --multiplayer-deterministic (no RNG).
+                local seedA = cx * 0.7 + cy * 1.3
+                local seedB = cx * 1.9 - cy * 0.6
+                local waviness = Resource_Organizer.NoiseWaviness --How far the outline lumps inward from the ellipse (0 = smooth ellipse)
+                --Yield gradient: rim tiles stay only slightly lighter than the centre. 'falloff'
+                --scales how much lighter, kept gentle and capped so edges never fade to nothing.
+                local edgeLightness = math.min(falloff * 0.1, 0.8)
+
+                --Pass 1: fill every placeable tile inside the irregular outline, weighting ore by distance
+                local chosen = {}
+                local totalWeight = 0
+                for x = event.area.left_top.x, event.area.right_bottom.x do     --Iterate x axis
+                    for y = event.area.left_top.y, event.area.right_bottom.y do --iterate y axis
+                        --Normalised radial distance: 0 at the centre, 1 on the inscribed ellipse
+                        local nx = (x - cx) / halfW
+                        local ny = (y - cy) / halfH
+                        local r = math.sqrt(nx * nx + ny * ny)
+                        --Irregular boundary radius for this direction. Star-convex (a single radius
+                        --per angle) guarantees the filled region is one connected body.
+                        --Factorio runs Lua 5.2.1 (math.atan2); the 'or' keeps it working on 5.3+ too.
+                        ---@diagnostic disable-next-line: deprecated
+                        local theta = math.atan2 and math.atan2(ny, nx) or math.atan(ny, nx)
+                        local wave = 0.5 * math.sin(3 * theta + seedA)
+                            + 0.3 * math.sin(5 * theta + seedB)
+                            + 0.2 * math.sin(7 * theta + seedA * 1.7)
+                        --Map wave (~[-1,1]) so the outline dips inward: boundary in [1 - waviness, 1]
+                        local boundary = 1 - waviness * (0.5 - 0.5 * wave)
+                        if r <= boundary and
+                            event.surface.can_place_entity { name = Resource_Organizer.Name, position = { x, y } } then
+                            --Distance to THIS direction's rim (0 centre .. 1 rim); gentle linear lightening
+                            local weight = 1 - edgeLightness * math.min(r / boundary, 1)
+                            chosen[#chosen + 1] = { x = x, y = y, weight = weight }
+                            totalWeight = totalWeight + weight
+                        end
+                    end
+                end
+
+                --Pass 2: hand out the ore in proportion to each tile's weight, conserving the total exactly
+                if #chosen == 0 then
+                    --Nothing picked (tiny selection / unlucky rolls) - drop everything on the first placeable tile
+                    for x = event.area.left_top.x, event.area.right_bottom.x do
+                        for y = event.area.left_top.y, event.area.right_bottom.y do
+                            if Resource_Organizer.Count ~= 0 and event.surface.can_place_entity { name = Resource_Organizer.Name, position = { x, y } } then
+                                event.surface.create_entity({
+                                    name = Resource_Organizer.Name,
+                                    position = { x, y },
+                                    amount = Resource_Organizer.Count
+                                })
+                                Resource_Organizer.Count = 0
+                            end
+                        end
+                    end
+                else
+                    local remainingWeight = totalWeight
+                    for i, tile in ipairs(chosen) do
+                        if Resource_Organizer.Count <= 0 then break end
+                        local amount
+                        if i == #chosen then
+                            --Last tile absorbs the remainder so no ore is lost to rounding
+                            amount = Resource_Organizer.Count
+                        else
+                            amount = math.floor(Resource_Organizer.Count * tile.weight / remainingWeight + 0.5)
+                            amount = math.min(amount, Resource_Organizer.Count)
+                        end
+                        remainingWeight = remainingWeight - tile.weight
+                        if amount > 0 then
+                            event.surface.create_entity({
+                                name = Resource_Organizer.Name,
+                                position = { tile.x, tile.y },
+                                amount = amount
+                            })
+                            Resource_Organizer.Count = Resource_Organizer.Count - amount
+                        end
+                    end
+                end
+            else
+                --Print solids in a clean square
+                for x = event.area.left_top.x, event.area.right_bottom.x do     --Iterate x axis
+                    for y = event.area.left_top.y, event.area.right_bottom.y do --iterate y axis
+                        -- Check resources to print, and not colliding
+                        if Resource_Organizer.Count ~= 0 and event.surface.can_place_entity { name = Resource_Organizer.Name, position = { x, y } } then
+                            --Print resource
+                            event.surface.create_entity({
+                                name = Resource_Organizer.Name,
+                                position = { x, y },
+                                amount = math.min(Resource_Organizer.Count, Resource_Organizer.CountPerCell)
+                            })
+                            --Remove printed resource from our total count
+                            Resource_Organizer.Count = Resource_Organizer.Count -
+                                math.min(Resource_Organizer.Count, Resource_Organizer.CountPerCell)
+                        end
                     end
                 end
             end

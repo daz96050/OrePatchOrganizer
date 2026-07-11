@@ -1,4 +1,13 @@
 ---------------------------------------------------------------------------------------------------
+Version: 0.2.4
+Date: 2026-07-10
+  Changes:
+    - Added "Natural (noise) placement" setting - prints solid ores as a single contiguous patch
+      with an irregular, organic outline that is richest in the centre and slightly lighter toward
+      the edges, similar to default resource generation (no gaps or scattered tiles)
+    - Added "Natural placement falloff" setting to control how much lighter the yield gets toward the edges
+    - Added "Natural placement waviness" setting to control how irregular/lumpy the patch outline is
+---------------------------------------------------------------------------------------------------
 Version: 0.2.3
 Date: 2024-11-30
   Changes:
