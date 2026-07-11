@@ -1,14 +1,14 @@
 {
     "name": "OrePatchOrganizer",
     "version": "0.2.3",
-    "factorio_version": "2.0",
+    "factorio_version": "2.1",
     "title": "Resource Patch Organizer",
     "author": "PiggyWhiskey",
     "contact": "",
     "description": "Resource Patch Organizer, allows moving/resizing resource patches. Compatibility for VTK Deep Core, K2, SE and vanilla-like Ores/Fluids",
     "dependencies": [
-        "base >= 1.1.0",
-        "flib >= 0.7.0",
+        "base >= 2.1",
+        "flib >= 0.17.2",
         "?vtk-deep-core-mining >= 2.0.0",
         "?space-exploration >= 0.6.1",
         "?Krastorio2 >= 0.6.0",
