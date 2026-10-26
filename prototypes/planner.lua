@@ -1,9 +1,13 @@
+--Graphics paths are resolved by mod name, so this must match "name" in info.json.
+--Kept in one place because this fork is named differently to upstream OrePatchOrganizer.
+local modPath = "__OrePatchOrganizer-forked__"
+
 ---@diagnostic disable-next-line: undefined-global
 data:extend({
     {
         type = "selection-tool",
         name = "ore-patch-organizer",
-        icon = "__OrePatchOrganizer__/organizer.png",
+        icon = modPath .. "/organizer.png",
         icon_size = 64,
         icon_mipmaps = 6,
         flags = {
@@ -31,9 +35,9 @@ data:extend({
     {
         type = "shortcut",
         name = "ore-patch-organizer",
-        icon = "__OrePatchOrganizer__/organizer.png",
+        icon = modPath .. "/organizer.png",
         icon_size = 64,
-        small_icon = "__OrePatchOrganizer__/organizer.png",
+        small_icon = modPath .. "/organizer.png",
         small_icon_size = 64,
         order = "o[ore-organizer]",
         action = "spawn-item",

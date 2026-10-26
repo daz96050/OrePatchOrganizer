@@ -1,4 +1,11 @@
 ---------------------------------------------------------------------------------------------------
+Version: 0.2.6
+Date: 2026-07-27
+  Bugfixes:
+    - Fixed the tool and shortcut icons pointing at the original mod's folder, which failed to load
+      with "__OrePatchOrganizer__/organizer.png does not match any enabled mod" unless the original
+      Resource Patch Organizer was also installed and enabled
+---------------------------------------------------------------------------------------------------
 Version: 0.2.5
 Date: 2026-07-27
   Bugfixes:

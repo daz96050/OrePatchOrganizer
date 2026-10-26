@@ -1,20 +1,20 @@
 {
-    "name": "OrePatchOrganizer-forked",
-    "version": "0.2.5",
-    "factorio_version": "2.1",
-    "title": "Resource Patch Organizer (forked)",
-    "author": "daz96050",
-    "contact": "",
-    "description": "Resource Patch Organizer, allows moving/resizing resource patches. Compatibility for VTK Deep Core, K2, SE and vanilla-like Ores/Fluids",
-    "dependencies": [
-        "base >= 1.1.0",
-        "flib >= 0.7.0",
-        "?vtk-deep-core-mining >= 2.0.0",
-        "?space-exploration >= 0.6.1",
-        "?Krastorio2 >= 0.6.0",
-        "?bzgas >= 0.0.1",
-        "?pyrawores >= 2.0.0",
-        "?pycoalprocessing >= 1.0.0",
-        "?cursedFMD >= 0.2.0"
-    ]
+  "name": "OrePatchOrganizer-forked",
+  "version": "0.2.6",
+  "factorio_version": "2.1",
+  "title": "Resource Patch Organizer (forked)",
+  "author": "daz96050",
+  "contact": "",
+  "description": "Resource Patch Organizer, allows moving/resizing resource patches. Compatibility for VTK Deep Core, K2, SE and vanilla-like Ores/Fluids",
+  "dependencies": [
+    "base >= 1.1.0",
+    "flib >= 0.7.0",
+    "?vtk-deep-core-mining >= 2.0.0",
+    "?space-exploration >= 0.6.1",
+    "?Krastorio2 >= 0.6.0",
+    "?bzgas >= 0.0.1",
+    "?pyrawores >= 2.0.0",
+    "?pycoalprocessing >= 1.0.0",
+    "?cursedFMD >= 0.2.0"
+  ]
 }
