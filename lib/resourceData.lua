@@ -69,6 +69,10 @@ AddToTable("Vortek_Deep_Core_Mining", "vtk-deepcore-mining-ore-patch", "solid", 
 
 AddToTable("BZ_Natural_Gas", "gas", "fluid", "spaced", 3)
 
+--Paracelsin's data-final-fixes moves other mods' vents into this category too: Vulcanus sulfuric-acid-geyser,
+--fluorine-vent, Moshine steam-geyser, Castra hydrogen-sulfide-vent, Rabbasca harene-vent, Carna vents
+AddToTable("Paracelsin", "gas-vents", "fluid", "spaced", 3) --3x3 vents, Pressure Turbine / Pumpjack are 3x3
+
 AddToTable("Pyanodon", "iron-rock", "solid", "spaced", 13)
 AddToTable("Pyanodon", "copper-rock", "solid", "spaced", 13)
 

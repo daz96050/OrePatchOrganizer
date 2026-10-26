@@ -80,6 +80,13 @@ A category that isn't in the table is silently ignored: `SetResourceOrganizer` r
 `nil`, so the tool just won't pick that resource up. That's the symptom to look for when a
 resource "does nothing".
 
+**Other mods can rewrite a resource's category in `data-final-fixes`**, so the category in a
+resource's own prototype file isn't necessarily the one it has at runtime. Paracelsin moves the
+Vulcanus/Aquilo vents and several other planet mods' geysers from `basic-fluid` into its own
+`gas-vents`: with Paracelsin installed, those resources were silently ignored while crude oil
+still worked. When one mod's resource "does nothing", grep the *whole modpack* for
+`.category =`, not just the mod that defines it.
+
 ### Working out the numbers for a new mod
 
 Read the prototypes out of the mod zip rather than guessing:
